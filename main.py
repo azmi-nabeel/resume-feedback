@@ -21,15 +21,27 @@ def extract_text(pdf_path):
             text += page.extract_text() + "\n"
     return text.strip()
 
-def analyze(resume_path):
+def analyze(resume_path,jd_path):
     resume_text = extract_text(resume_path)
     client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+    prompt=""
+
+    if jd_path:
+        jd_text = extract_text(jd_path)
+        prompt+="Here is the job description: " + jd_text + "\n\n"
+        prompt+="Here is my resume: " + resume_text +"\n\n"
+        prompt+="Please analyze my resume and give a match score out of 100 for the job description.\n\n"
+        prompt+="Also, please provide feedback on how to improve my resume\n\n"
+
+    else:
+        prompt="How Do I improve my resume? Here is my resume: " + resume_text
 
     chat_completion = client.chat.completions.create(
         messages=[
             {
                 "role": "user",
-                "content": "How Do I improve my resume? Here is my resume: " + resume_text,
+                "content": prompt,
             }
         ],
         model="llama-3.3-70b-versatile",
@@ -41,7 +53,13 @@ def main():
     print("Enter the path to your Resume (PDF File):")
     resume_path = input()
 
-    analyze(resume_path)
+    print("Enter the path to the Job Description (PDF File) or press Enter to skip:")
+    jd_path = input()
+
+    if jd_path.strip() == "":
+        jd_path = None
+
+    analyze(resume_path,jd_path)
 
 
 if __name__ == "__main__":
