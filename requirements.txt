@@ -1,0 +1,4 @@
+pinecone
+python-dotenv
+pdfplumber
+groq
