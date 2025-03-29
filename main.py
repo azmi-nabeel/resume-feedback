@@ -1,3 +1,4 @@
+from pinecone import Pinecone
 import pdfplumber
 from groq import Groq
 import os
@@ -5,16 +6,33 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def extract_text(pdf_path):
-    """
-    Extracts text from a PDF file.
+def get_from_embeddings(jd_text):
+
+    pinecone_api_key = os.environ.get("PINECONE_API_KEY")    
+    pc = Pinecone(api_key=pinecone_api_key)
+    index = pc.Index("resume-index", host="https://resume-index-m2jr1pn.svc.aped-4627-b74a.pinecone.io")
+
+    query_embedding = pc.inference.embed(
+    model="multilingual-e5-large",
+    inputs=[jd_text],
+    parameters={
+        "input_type": "query"
+    })
     
-    Args:
-        pdf_path (str): Path to the PDF file.
-        
-    Returns:
-        str: Extracted text from the PDF.
-    """
+    query_result = index.query(
+        namespace="user1",
+        top_k=2,
+        vector=query_embedding[0].values,
+        include_metadata=True
+    )
+
+    relevant_data = "\n".join(
+        f"- {item['metadata']['chunk_text']} ({item['metadata']['category']})"
+        for item in query_result["matches"]
+    )
+    return relevant_data
+
+def extract_text(pdf_path):
     text = ""
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
@@ -33,6 +51,14 @@ def analyze(resume_path,jd_path):
         prompt+="Here is my resume: " + resume_text +"\n\n"
         prompt+="Please analyze my resume and give a match score out of 100 for the job description.\n\n"
         prompt+="Also, please provide feedback on how to improve my resume\n\n"
+
+        print("Do you want to improve your resume by adding relevant prjects and achievements? (y/n)")
+        choice=input()
+
+        if choice.lower() == "y":
+            relevant_data = get_from_embeddings(jd_text)
+            prompt+="Here are some relevant projects and achievements that I can add to my resume to improve its match with JD:\n\n"
+            prompt+=relevant_data + "\n\n"
 
     else:
         prompt="How Do I improve my resume? Here is my resume: " + resume_text
