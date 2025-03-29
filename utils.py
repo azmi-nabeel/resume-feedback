@@ -29,7 +29,7 @@ def pinecone_init():
 
 index_model=pinecone_init()
 
-index=pc.Index(host="https://resume-index-m2jr1pn.svc.aped-4627-b74a.pinecone.io", index_name=index_name)
+index=pc.Index(host=os.environ.get("PINECONE_HOST") , index_name=index_name)
 
 index.upsert_records(
     "user1",

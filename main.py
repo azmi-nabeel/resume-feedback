@@ -10,7 +10,7 @@ def get_from_embeddings(jd_text):
 
     pinecone_api_key = os.environ.get("PINECONE_API_KEY")    
     pc = Pinecone(api_key=pinecone_api_key)
-    index = pc.Index("resume-index", host="https://resume-index-m2jr1pn.svc.aped-4627-b74a.pinecone.io")
+    index = pc.Index("resume-index", host=os.environ.get("PINECONE_HOST"))
 
     query_embedding = pc.inference.embed(
     model="multilingual-e5-large",
